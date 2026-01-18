@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRIME XUU⚡</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #000;
+            --accent: #0070f3;
+            --ai-color: #7c3aed;
+            --danger: #ff4d4f;
+            --glass: rgba(255, 255, 255, 0.9);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #000;
+            background-image: radial-gradient(circle at top right, #1e1e2e, #000);
+            color: #111;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .main-container { width: 100%; max-width: 500px; padding: 40px 20px; box-sizing: border-box; }
+
+        .header { text-align: center; margin-bottom: 25px; color: white; }
+        .header h1 { margin: 0; font-weight: 800; font-size: 1.8rem; letter-spacing: -1px; }
+
+        /* --- Components --- */
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        label { display: block; font-weight: 700; font-size: 0.8rem; margin-bottom: 8px; color: #555; text-transform: uppercase; }
+        
+        input, textarea, select {
+            width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 12px;
+            font-size: 0.95rem; box-sizing: border-box; margin-bottom: 15px; font-family: inherit;
+        }
+
+        /* --- Tabs --- */
+        .tab-nav { display: flex; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 15px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 12px; background: transparent; color: white; cursor: pointer; font-weight: 700; transition: 0.3s; }
+        .tab-btn.active { background: white; color: black; }
+
+        /* --- Buttons --- */
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.2s; font-size: 1rem; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-ai { background: linear-gradient(135deg, #6366f1, #a855f7); color: white; }
+        .btn:hover { transform: translateY(-2px); opacity: 0.9; }
+
+        /* --- Manage & Search --- */
+        .search-area { margin-bottom: 15px; }
+        .project-item {
+            background: white; border-radius: 15px; padding: 15px; margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            border: 1px solid #eee; transition: 0.2s;
+        }
+        .project-item:hover { border-color: var(--accent); }
+        .project-item.hidden { display: none; }
+        
+        .del-btn { background: #fff1f2; color: var(--danger); border: none; padding: 10px; border-radius: 10px; cursor: pointer; }
+        .del-btn:hover { background: var(--danger); color: white; }
+
+        /* --- Success/QR --- */
+        #resultBox { text-align: center; display: none; }
+        .qr-img { border: 8px solid white; border-radius: 15px; margin-top: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+
+        /* --- Loader --- */
+        #loader {
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center;
+            flex-direction: column; color: white;
+        }
+        .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="header">
+        <h1>PRIME XUU</h1>
+        <p style="opacity: 0.6; font-size: 0.9rem;">Tools Deploy To Vercel</p>
+    </div>
+
+    <div class="card">
+        <label>🔑 API Keys</label>
+        <input type="password" id="vToken" placeholder="Vercel Token (pfx_...) WAJIB" onchange="saveConfig()">
+        <input type="password" id="aiToken" placeholder="OpenAI Key (sk-...) BEBAS" onchange="saveConfig()">
+    </div>
+
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('ai')">✨ AI Gen</button>
+        <button class="tab-btn" onclick="switchTab('manual')">📂 Manual</button>
+        <button class="tab-btn" onclick="switchTab('manage'); listProjs();">🛠️ Manager</button>
+    </div>
+
+    <div id="aiTab" class="card">
+        <label>Project Name</label>
+        <input type="text" id="aiName" placeholder="my-awesome-site">
+        <label>Prompt (Deskripsi Website)</label>
+        <textarea id="aiPrompt" rows="4" placeholder="Contoh: Buatkan landing page jasa foto minimalis warna putih dan abu-abu..."></textarea>
+        <button class="btn btn-ai" onclick="generateAI()">🔮 Magic Deploy</button>
+    </div>
+
+    <div id="manualTab" class="card" style="display:none;">
+        <label>Project Name</label>
+        <input type="text" id="manName" placeholder="manual-project">
+        <label>Pilih Template</label>
+        <select id="manTemplate">
+            <option value="">-- Gunakan File Sendiri --</option>
+            <option value="linktree">🔗 Linktree Style</option>
+            <option value="landing">🚀 Simple Landing Page</option>
+        </select>
+        <label>Atau Upload index.html / .zip</label>
+        <input type="file" id="manFile" accept=".html,.zip">
+        <button class="btn btn-primary" onclick="deployManual()">🚀 Deploy Now</button>
+    </div>
+
+    <div id="manageTab" class="card" style="display:none;">
+        <div class="search-area">
+            <input type="text" id="searchBar" placeholder="🔍 Cari project..." onkeyup="searchProjs()">
+        </div>
+        <div id="projList">
+            <p style="text-align: center; opacity: 0.5;">Memuat project...</p>
+        </div>
+    </div>
+
+    <div id="resultBox" class="card">
+        <h3 style="margin-top:0; color:#10b981;">✅ Live!</h3>
+        <a id="resLink" href="#" target="_blank" style="font-weight:bold; color:var(--accent); text-decoration:none; word-break:break-all;"></a>
+        <br>
+        <img id="resQR" class="qr-img" width="150" height="150">
+    </div>
+</div>
+
+<div id="loader">
+    <div class="spinner"></div>
+    <p id="loadMsg" style="margin-top: 15px; font-weight: 600;"></p>
+</div>
+
+<script>
+    const TEMPLATES = {
+        linktree: `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{background:#000;color:#fff;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;padding:50px}a{width:280px;padding:15px;margin:10px;border:1px solid #fff;color:#fff;text-decoration:none;text-align:center;border-radius:10px;transition:0.3s}a:hover{background:#fff;color:#000}</style></head><body><h1>My Links</h1><a href="#">Instagram</a><a href="#">Github</a><a href="#">Portfolio</a></body></html>`,
+        landing: `<!DOCTYPE html><html><body style="margin:0;font-family:sans-serif;text-align:center;background:#f4f4f4"> <nav style="padding:20px;background:#fff">Logo</nav> <header style="padding:100px 20px;background:#0070f3;color:#fff"><h1>Welcome to Our Site</h1><p>The best solution for you.</p></header> </body></html>`
+    };
+
+    window.onload = () => {
+        document.getElementById('vToken').value = localStorage.getItem('v_token') || '';
+        document.getElementById('aiToken').value = localStorage.getItem('ai_key') || '';
+    };
+
+    function saveConfig() {
+        localStorage.setItem('v_token', document.getElementById('vToken').value);
+        localStorage.setItem('ai_key', document.getElementById('aiToken').value);
+    }
+
+    function switchTab(t) {
+        ['aiTab', 'manualTab', 'manageTab'].forEach(id => document.getElementById(id).style.display = 'none');
+        document.getElementById(t + 'Tab').style.display = 'block';
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase().includes(t)));
+        document.getElementById('resultBox').style.display = 'none';
+    }
+
+    async function vercelPost(name, files) {
+        const token = document.getElementById('vToken').value;
+        const res = await fetch('https://api.vercel.com/v13/deployments', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: name.toLowerCase().replace(/\s+/g, '-'),
+                files: files,
+                target: 'production'
+            })
+        });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error.message);
+        
+        const url = `https://${data.alias?.[0] || data.url}`;
+        document.getElementById('resLink').innerText = url;
+        document.getElementById('resLink').href = url;
+        document.getElementById('resQR').src = `https://api.qrserver.com/v1/create-qr-code/?data=${url}`;
+        document.getElementById('resultBox').style.display = 'block';
+    }
+
+    async function generateAI() {
+        const prompt = document.getElementById('aiPrompt').value;
+        const name = document.getElementById('aiName').value;
+        const aiKey = document.getElementById('aiToken').value;
+        if(!prompt || !name || !aiKey) return toast("Lengkapi data AI!", "error");
+
+        loading(true, "🤖 AI sedang coding...");
+        try {
+            const gptRes = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${aiKey}` },
+                body: JSON.stringify({
+                    model: "gpt-3.5-turbo",
+                    messages: [{role:"system", content:"Output ONLY valid HTML/CSS code. No explain."}, {role:"user", content: prompt}]
+                })
+            });
+            const gptData = await gptRes.json();
+            const code = gptData.choices[0].message.content.replace(/```html|```/g, '');
+            
+            loading(true, "🚀 Mengirim ke Cloud...");
+            await vercelPost(name, [{ file: 'index.html', data: code }]);
+            toast("AI Success!", "success");
+        } catch (e) { toast(e.message, "error"); }
+        loading(false);
+    }
+
+    async function deployManual() {
+        const name = document.getElementById('manName').value;
+        const templateKey = document.getElementById('manTemplate').value;
+        const file = document.getElementById('manFile').files[0];
+        if(!name) return toast("Nama project wajib!", "error");
+
+        loading(true, "🚀 Processing...");
+        try {
+            let files = [];
+            if (templateKey) {
+                files.push({ file: 'index.html', data: TEMPLATES[templateKey] });
+            } else if (file) {
+                if (file.name.endsWith('.zip')) {
+                    const zip = await (new JSZip()).loadAsync(file);
+                    for (let p in zip.files) {
+                        if(!zip.files[p].dir) files.push({ file: p, data: await zip.files[p].async("string") });
+                    }
+                } else {
+                    files.push({ file: 'index.html', data: await file.text() });
+                }
+            } else return toast("Pilih template atau file!", "error");
+
+            await vercelPost(name, files);
+            toast("Manual Success!", "success");
+        } catch (e) { toast(e.message, "error"); }
+        loading(false);
+    }
+
+    async function listProjs() {
+        const token = document.getElementById('vToken').value;
+        const container = document.getElementById('projList');
+        if(!token) return container.innerHTML = "Token Vercel Kosong.";
+
+        try {
+            const res = await fetch('https://api.vercel.com/v9/projects', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            container.innerHTML = data.projects.map(p => `
+                <div class="project-item" data-name="${p.name.toLowerCase()}">
+                    <div><strong class="p-name">${p.name}</strong></div>
+                    <button class="del-btn" onclick="delProj('${p.id}', '${p.name}')">🗑️</button>
+                </div>
+            `).join('') || "Belum ada project.";
+        } catch (e) { container.innerHTML = "Error loading."; }
+    }
+
+    function searchProjs() {
+        const q = document.getElementById('searchBar').value.toLowerCase();
+        document.querySelectorAll('.project-item').forEach(el => {
+            el.classList.toggle('hidden', !el.getAttribute('data-name').includes(q));
+        });
+    }
+
+    async function delProj(id, name) {
+        if(!confirm(`Hapus ${name}?`)) return;
+        const token = document.getElementById('vToken').value;
+        loading(true, "Menghapus...");
+        try {
+            await fetch(`https://api.vercel.com/v9/projects/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            toast("Dihapus!", "success");
+            listProjs();
+        } catch (e) { toast("Gagal hapus", "error"); }
+        loading(false);
+    }
+
+    function loading(s, m) { document.getElementById('loader').style.display = s ? 'flex' : 'none'; document.getElementById('loadMsg').innerText = m; }
+    function toast(m, t) { Toastify({ text: m, style: { background: t==='success'?"#10b981":"#ef4444", borderRadius: "10px" } }).showToast(); }
+</script>
+</body>
+</html>
